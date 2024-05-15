@@ -44,6 +44,7 @@ utils::globalVariables(c("degree"))
 #' @param label.n is an integer. It indicates the number of vertex labels to draw.
 #' @param alpha is a number. Legal alpha values are any numbers from 0 (transparent) to 1 (opaque). The default alpha value usually is 0.5.
 #' @param verbose is a logical. If TRUE, network will be plotted. Default is \code{verbose = TRUE}.
+#' @param fill is a character. It indicates the color of vertices. Default is \code{NULL}.
 #' @return It is a list containing the following elements:
 #' \tabular{lll}{
 #' \code{graph} \tab  \tab a network object of the class \code{igraph}\cr
@@ -357,6 +358,7 @@ networkPlot <-
                    degree = degree,
                    Title = Title,
                    type = type,
+                   fill = fill,
                    label = label,
                    labelsize = labelsize,
                    label.cex = label.cex,
