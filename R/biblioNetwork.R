@@ -137,7 +137,7 @@ biblioNetwork <-
           WA <- cocMatrix(M, Field = "SO", type = "sparse", n, sep,short=short)
         },
         subjectCategories = {
-          WA <- cocMatrix(M, Field = "SU", type = "sparse", n, sep,short=short)
+          WA <- cocMatrix(M, Field = "SC", type = "sparse", n, sep,short=short)
         } 
       )
       NetMatrix <- crossprod(WA, WA)
@@ -178,7 +178,7 @@ biblioNetwork <-
           WA <- cocMatrix(M, Field = "AU_CO", type = "sparse", n, sep,short=short)
         },
         subjectCategories = {
-          WA <- cocMatrix(M, Field = "SU", type = "sparse", n, sep,short=short)
+          WA <- cocMatrix(M, Field = "SC", type = "sparse", n, sep,short=short)
         } 
       )
       NetMatrix <- crossprod(WA, WA)
