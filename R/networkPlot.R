@@ -74,6 +74,7 @@ networkPlot <-
            degree = NULL,
            Title = "Plot",
            type = "auto",
+           fill = NULL,
            label = TRUE,
            labelsize = 1,
            label.cex = FALSE,
@@ -135,6 +136,17 @@ networkPlot <-
       arrange(desc(degree)) %>% 
       mutate(degree = degree/max(degree))
     
+    if (!is.null(fill)) {
+      if (length(fill) < length(unique(deg.dist$degree))) {
+        warning("Not enough colors in fill vector, colors will be recycled.")
+      }
+    }
+    
+    # added code for the adjustable colors of nodes
+    result_network <- clusteringNetwork(bsk.network, cluster, fill = fill)
+    bsk.network <- result_network$bsk.network
+    net_groups <- result_network$net_groups
+    
     
     # Compute node degrees (#links) and use that to set node size:
     #deg <- degree(bsk.network, mode = "all")
@@ -171,7 +183,7 @@ networkPlot <-
         n <- dim(NetMatrix)[1]
       }
       nodes <- names(sort(deg, decreasing = TRUE)[1:n])
-
+      
       bsk.network <- delete.vertices(bsk.network, which(!(V(bsk.network)$name %in% nodes)))
       if (!isTRUE(bsk.S)) {
         bsk.S <- delete.vertices(bsk.S,  which(!(V(bsk.S)$name %in% nodes)))
@@ -201,172 +213,172 @@ networkPlot <-
     
     # Clustering
     #if (type != "vosviewer") {
-      ## Edge size
-      E(bsk.network)$num <- E(bsk.save)$num <- count_multiple(bsk.network, eids = E(bsk.network))
-      if (is.null(weighted)) {
-        E(bsk.save)$weight <- E(bsk.save)$num
+    ## Edge size
+    E(bsk.network)$num <- E(bsk.save)$num <- count_multiple(bsk.network, eids = E(bsk.network))
+    if (is.null(weighted)) {
+      E(bsk.save)$weight <- E(bsk.save)$num
+    }
+    
+    if (!is.null(weighted)) {
+      E(bsk.network)$width <-
+        (E(bsk.network)$weight + min(E(bsk.network)$weight)) / max(E(bsk.network)$weight + min(E(bsk.network)$weight)) *
+        edgesize
+    } else{
+      if (isTRUE(remove.multiple)) {
+        E(bsk.network)$width <- edgesize
       }
-      
-      if (!is.null(weighted)) {
-        E(bsk.network)$width <-
-          (E(bsk.network)$weight + min(E(bsk.network)$weight)) / max(E(bsk.network)$weight + min(E(bsk.network)$weight)) *
-          edgesize
-      } else{
-        if (isTRUE(remove.multiple)) {
-          E(bsk.network)$width <- edgesize
-        }
-        else{
-          edges <- E(bsk.network)$num
-          E(bsk.network)$width <- edges / max(edges) * edgesize
-        }
+      else{
+        edges <- E(bsk.network)$num
+        E(bsk.network)$width <- edges / max(edges) * edgesize
       }
-      
-      bsk.network <- delete.edges(bsk.network, which(E(bsk.network)$num < edges.min))
+    }
+    
+    bsk.network <- delete.edges(bsk.network, which(E(bsk.network)$num < edges.min))
+    if (!isTRUE(bsk.S)) {
+      bsk.S <- delete.edges(bsk.S, which(E(bsk.network)$num < edges.min))
+    }
+    
+    # delete not linked vertices
+    if (isTRUE(remove.isolates)) {
+      bsk.network <- delete.isolates(bsk.network, mode = 'all')
       if (!isTRUE(bsk.S)) {
-        bsk.S <- delete.edges(bsk.S, which(E(bsk.network)$num < edges.min))
+        bsk.S <-
+          delete.vertices(bsk.S, which(V(bsk.S)$name %in% setdiff(
+            V(bsk.S)$name, V(bsk.network)$name
+          )))
       }
-      
-      # delete not linked vertices
-      if (isTRUE(remove.isolates)) {
-        bsk.network <- delete.isolates(bsk.network, mode = 'all')
-        if (!isTRUE(bsk.S)) {
-          bsk.S <-
-            delete.vertices(bsk.S, which(V(bsk.S)$name %in% setdiff(
-              V(bsk.S)$name, V(bsk.network)$name
-            )))
-        }
-      }
-      
-      
-
-      
-      # Community Detection
-      
-      cl <- clusteringNetwork(bsk.network, cluster)
-      
-      bsk.network <- cl$bsk.network
-      if (!isTRUE(bsk.S)) {
-        V(bsk.S)$color <-  V(bsk.network)$color
-        V(bsk.S)$community <- V(bsk.network)$community
-      }
-      net_groups <- cl$net_groups
-      
-      # Choose Network layout
-      if (!isTRUE(bsk.S)) {
-        layout_results <- switchLayout(bsk.S, type, community.repulsion)
-        bsk.S <- layout_results$bsk.S
-      } else{
-        layout_results <- switchLayout(bsk.network, type, community.repulsion)
-        bsk.network <- layout_results$bsk.network
-      }
-      l <- layout_results$l
-      
-      ## Labelling the network
-      LABEL = ""
-      if (isTRUE(label)) {
-        LABEL <- V(bsk.network)$name
-        if (!is.null(label.n)) {
-          q <- 1 - (label.n / length(V(bsk.network)$deg))
-          if (q <= 0) {
-            #LABEL <- rep("", length(LABEL))
-            V(bsk.network)$labelsize <- 10
-          } else {
-            if (q > 1) {
-              q <- 1
-            }
-            q <- quantile(V(bsk.network)$deg, q)
-            LABEL[V(bsk.network)$deg < q] <- ""
-            V(bsk.network)$labelsize <- 10
-            V(bsk.network)$labelsize[V(bsk.network)$deg < q] <- 0
+    }
+    
+    
+    
+    
+    # Community Detection
+    
+    cl <- clusteringNetwork(bsk.network, cluster)
+    
+    bsk.network <- cl$bsk.network
+    if (!isTRUE(bsk.S)) {
+      V(bsk.S)$color <-  V(bsk.network)$color
+      V(bsk.S)$community <- V(bsk.network)$community
+    }
+    net_groups <- cl$net_groups
+    
+    # Choose Network layout
+    if (!isTRUE(bsk.S)) {
+      layout_results <- switchLayout(bsk.S, type, community.repulsion)
+      bsk.S <- layout_results$bsk.S
+    } else{
+      layout_results <- switchLayout(bsk.network, type, community.repulsion)
+      bsk.network <- layout_results$bsk.network
+    }
+    l <- layout_results$l
+    
+    ## Labelling the network
+    LABEL = ""
+    if (isTRUE(label)) {
+      LABEL <- V(bsk.network)$name
+      if (!is.null(label.n)) {
+        q <- 1 - (label.n / length(V(bsk.network)$deg))
+        if (q <= 0) {
+          #LABEL <- rep("", length(LABEL))
+          V(bsk.network)$labelsize <- 10
+        } else {
+          if (q > 1) {
+            q <- 1
           }
+          q <- quantile(V(bsk.network)$deg, q)
+          LABEL[V(bsk.network)$deg < q] <- ""
+          V(bsk.network)$labelsize <- 10
+          V(bsk.network)$labelsize[V(bsk.network)$deg < q] <- 0
         }
       }
+    }
+    
+    
+    
+    
+    if (isTRUE(label.color)) {
+      lab.color <- V(bsk.network)$color
+    } else{
+      lab.color <- "black"
+    }
+    
+    
+    
+    #l <- layout.norm(l)
+    
+    ## Setting Network Attributes
+    igraph::graph_attr(bsk.network, "alpha") <- alpha
+    igraph::graph_attr(bsk.network, "ylim") <- c(-1,1)
+    igraph::graph_attr(bsk.network, "xlim") <- c(-1,1)
+    igraph::graph_attr(bsk.network, "rescale") <- TRUE
+    igraph::graph_attr(bsk.network, "asp") <- 0
+    igraph::graph_attr(bsk.network, "layout") <- l
+    igraph::graph_attr(bsk.network, "main") <- Title
+    E(bsk.network)$curved = curved
+    V(bsk.network)$label.dist = 0.7
+    V(bsk.network)$frame.color = adjustcolor('black', alpha)
+    V(bsk.network)$color <- adjustcolor(V(bsk.network)$color, alpha)
+    V(bsk.network)$label.color <- adjustcolor('black', min(c(1, alpha + 0.1)))
+    V(bsk.network)$label.font = 2
+    V(bsk.network)$label = LABEL
+    
+    
+    ## Plot the network
+    if (isTRUE(halo) & cluster != "none") {
       
+      if (isTRUE(verbose)){plot(net_groups,bsk.network)}
       
+    } else{
+      E(bsk.network)$color = adjustcolor(E(bsk.network)$color, alpha / 2)
       
+      if (isTRUE(verbose)){plot(bsk.network)}
       
-      if (isTRUE(label.color)) {
-        lab.color <- V(bsk.network)$color
-      } else{
-        lab.color <- "black"
-      }
-      
-      
-      
-      #l <- layout.norm(l)
-      
-      ## Setting Network Attributes
-      igraph::graph_attr(bsk.network, "alpha") <- alpha
-      igraph::graph_attr(bsk.network, "ylim") <- c(-1,1)
-      igraph::graph_attr(bsk.network, "xlim") <- c(-1,1)
-      igraph::graph_attr(bsk.network, "rescale") <- TRUE
-      igraph::graph_attr(bsk.network, "asp") <- 0
-      igraph::graph_attr(bsk.network, "layout") <- l
-      igraph::graph_attr(bsk.network, "main") <- Title
-      E(bsk.network)$curved = curved
-      V(bsk.network)$label.dist = 0.7
-      V(bsk.network)$frame.color = adjustcolor('black', alpha)
-      V(bsk.network)$color <- adjustcolor(V(bsk.network)$color, alpha)
-      V(bsk.network)$label.color <- adjustcolor('black', min(c(1, alpha + 0.1)))
-      V(bsk.network)$label.font = 2
-      V(bsk.network)$label = LABEL
-      
-      
-      ## Plot the network
-      if (isTRUE(halo) & cluster != "none") {
-        
-        if (isTRUE(verbose)){plot(net_groups,bsk.network)}
-        
-      } else{
-        E(bsk.network)$color = adjustcolor(E(bsk.network)$color, alpha / 2)
-        
-        if (isTRUE(verbose)){plot(bsk.network)}
-        
-      }
-      
+    }
+    
     ## Output
     if (cluster != "none") {
       cluster_res <- data.frame(net_groups$names,
-                               net_groups$membership,
-                               as.numeric(betweenness(
-                                 bsk.network, directed = F, normalized = F
-                               )),
-                               suppressWarnings(as.numeric(closeness(
-                                 bsk.network))),
-                               as.numeric(page.rank(bsk.network)$vector))
+                                net_groups$membership,
+                                as.numeric(betweenness(
+                                  bsk.network, directed = F, normalized = F
+                                )),
+                                suppressWarnings(as.numeric(closeness(
+                                  bsk.network))),
+                                as.numeric(page.rank(bsk.network)$vector))
       names(cluster_res) <- c("vertex", "cluster", "btw_centrality", "clos_centrality","pagerank_centrality")
       cluster_res <- cluster_res[order(cluster_res$cluster), ]
     } else {
       cluster_res <- NA
     }
     
-      params <- list(normalize = normalize,
-                     n = n,
-                     degree = degree,
-                     Title = Title,
-                     type = type,
-                     label = label,
-                     labelsize = labelsize,
-                     label.cex = label.cex,
-                     label.color = label.color,
-                     label.n = label.n,
-                     halo = halo,
-                     cluster = cluster,
-                     community.repulsion = community.repulsion,
-                     vos.path = vos.path,
-                     size = size,
-                     size.cex = size.cex,
-                     curved = curved,
-                     noloops = noloops,
-                     remove.multiple = remove.multiple,
-                     remove.isolates = remove.isolates,
-                     weighted = weighted,
-                     edgesize = edgesize,
-                     edges.min = edges.min,
-                     alpha = alpha,
-                     verbose = verbose)
-      params <- data.frame(params=names(unlist(params)),values=unlist(params), row.names = NULL)
-      
+    params <- list(normalize = normalize,
+                   n = n,
+                   degree = degree,
+                   Title = Title,
+                   type = type,
+                   label = label,
+                   labelsize = labelsize,
+                   label.cex = label.cex,
+                   label.color = label.color,
+                   label.n = label.n,
+                   halo = halo,
+                   cluster = cluster,
+                   community.repulsion = community.repulsion,
+                   vos.path = vos.path,
+                   size = size,
+                   size.cex = size.cex,
+                   curved = curved,
+                   noloops = noloops,
+                   remove.multiple = remove.multiple,
+                   remove.isolates = remove.isolates,
+                   weighted = weighted,
+                   edgesize = edgesize,
+                   edges.min = edges.min,
+                   alpha = alpha,
+                   verbose = verbose)
+    params <- data.frame(params=names(unlist(params)),values=unlist(params), row.names = NULL)
+    
     net <- list(
       graph = bsk.network,
       graph_pajek = bsk.save,
@@ -398,8 +410,21 @@ delete.isolates <- function(graph, mode = 'all') {
 
 ### clusteringNetwork
 
-clusteringNetwork <- function(bsk.network, cluster) {
-  colorlist <- colorlist() 
+colorlist <- function() {
+  c(RColorBrewer::brewer.pal(8, 'PuRd')[-c(1,2,3)],
+    RColorBrewer::brewer.pal(9, 'Purples')[-c(1,2,3)],
+    RColorBrewer::brewer.pal(12, 'Paired')[-c(1,2,3)],
+    RColorBrewer::brewer.pal(12, 'Set3')[-c(1,2,3)]
+  )
+}
+
+
+clusteringNetwork <- function(bsk.network, cluster, fill = NULL) {
+  if (is.null(fill)) {
+    fill <- colorlist()
+  }
+  
+  #colorlist <- colorlist() 
   #   c(
   #   brewer.pal(9, 'Set1')[-6],
   #   brewer.pal(8, 'Set2')[-7],
@@ -449,7 +474,7 @@ clusteringNetwork <- function(bsk.network, cluster) {
     }
   )
   
-  V(bsk.network)$color <- colorlist[net_groups$membership]
+  V(bsk.network)$color <- fill[net_groups$membership]
   
   ### set egde intra-class colors
   V(bsk.network)$community <- net_groups$membership
@@ -483,7 +508,7 @@ clusteringNetwork <- function(bsk.network, cluster) {
 ### switchLayout
 
 switchLayout <- function(bsk.network, type, community.repulsion) {
-
+  
   if (community.repulsion>0){
     community.repulsion = round(community.repulsion*100)
     row <- get.edgelist(bsk.network)
