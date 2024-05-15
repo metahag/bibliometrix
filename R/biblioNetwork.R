@@ -9,6 +9,7 @@
 #' -- Authors collaboration (analysis = "collaboration", network = "authors")\cr
 #' -- University collaboration (analysis = "collaboration", network = universities")\cr
 #' -- Country collaboration (analysis = "collaboration", network = "countries")\cr\cr
+#' -- Subject categories collaboration (analysis = "collaboration", network = "subjectCategories")\cr\cr)
 #' #### Co-citation Networks ##############\cr
 #' -- Authors co-citation (analysis = "co-citation", network = "authors")\cr
 #' -- Reference co-citation (analysis = "co-citation", network = "references")\cr
@@ -25,6 +26,7 @@
 #' -- Author-Keyword co-occurrences (analysis = "co-occurrences", network = "author_keywords")\cr
 #' -- Title content co-occurrences (analysis = "co-occurrences", network = "titles")\cr
 #' -- Abstract content co-occurrences (analysis = "co-occurrences", network = "abstracts")\cr\cr
+#' -- Subject categories co-occurrences (analysis = "co-occurrences", network = "subjectCategories")\cr\cr)
 #'
 #' References:\cr
 #' Batagelj, V., & Cerinsek, M. (2013). On bibliographic networks. Scientometrics, 96(3), 845-864.\cr
@@ -133,7 +135,10 @@ biblioNetwork <-
         },
         sources = {
           WA <- cocMatrix(M, Field = "SO", type = "sparse", n, sep,short=short)
-        }
+        },
+        subjectCategories = {
+          WA <- cocMatrix(M, Field = "SU", type = "sparse", n, sep,short=short)
+        } 
       )
       NetMatrix <- crossprod(WA, WA)
       
@@ -171,7 +176,10 @@ biblioNetwork <-
         },
         countries = {
           WA <- cocMatrix(M, Field = "AU_CO", type = "sparse", n, sep,short=short)
-        }
+        },
+        subjectCategories = {
+          WA <- cocMatrix(M, Field = "SU", type = "sparse", n, sep,short=short)
+        } 
       )
       NetMatrix <- crossprod(WA, WA)
       
