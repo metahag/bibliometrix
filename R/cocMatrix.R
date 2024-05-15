@@ -85,7 +85,7 @@ cocMatrix<-function(M, Field = "AU", type = "sparse", n=NULL, sep = ";",binary=T
   RowNames <- row.names(M)
   
   ### REMOVE TERMS AND MERGE SYNONYMS
-  if (Field %in% c("ID", "DE", "TI", "TI_TM", "AB", "AB_TM")){
+  if (Field %in% c("ID", "DE", "TI", "TI_TM", "AB", "AB_TM", "SC")){
     # Crete df with all terms
     
     Fi <- strsplit(M[,Field], sep)
